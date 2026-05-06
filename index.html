@@ -451,6 +451,106 @@
       animation: sparkleFloat 1050ms ease-out forwards;
     }
 
+    .tyrone-warning {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 0.8rem;
+      width: min(720px, 100%);
+      min-height: 4.75rem;
+      margin: -0.45rem auto 1.5rem;
+      padding: 0.95rem 1.15rem 0.95rem 1.35rem;
+      border: 5px solid #6a4529;
+      border-radius: 16px 16px 22px 22px;
+      background:
+        linear-gradient(rgba(255, 239, 197, 0.88), rgba(255, 239, 197, 0.88)),
+        repeating-linear-gradient(90deg, #9b6339 0 18px, #7b4c2b 18px 36px);
+      box-shadow: inset 0 0 0 4px rgba(255, 246, 219, 0.24), 0 12px 24px rgba(65, 39, 18, 0.2);
+      opacity: 0;
+      transform: translateY(-10px) rotate(-0.6deg) scale(0.98);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .tyrone-warning::before,
+    .tyrone-warning::after {
+      content: "";
+      position: absolute;
+      left: 1.2rem;
+      right: 1.2rem;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(84, 32, 22, 0.28);
+      pointer-events: none;
+    }
+
+    .tyrone-warning::before {
+      top: 0.55rem;
+    }
+
+    .tyrone-warning::after {
+      bottom: 0.55rem;
+    }
+
+    .tyrone-warning[hidden] {
+      display: none;
+    }
+
+    .tyrone-warning.is-visible {
+      opacity: 1;
+      transform: translateY(0) rotate(-0.2deg) scale(1);
+      animation: tyroneSignDrop 560ms cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .tyrone-portrait {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 3rem;
+      height: 3rem;
+      border: 3px double rgba(84, 32, 22, 0.5);
+      border-radius: 50%;
+      background: #fff6db;
+      font-size: 1.65rem;
+      box-shadow: inset 0 0 10px rgba(216, 154, 58, 0.24);
+    }
+
+    .tyrone-copy {
+      position: relative;
+      z-index: 1;
+      display: block;
+      line-height: 1.35;
+    }
+
+    .tyrone-label {
+      display: block;
+      color: var(--barn-red-dark);
+      font: 800 0.78rem Arial, sans-serif;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .tyrone-message {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: clamp(1rem, 2.5vw, 1.18rem);
+      font-weight: 700;
+    }
+
+    body.is-night .tyrone-warning {
+      border-color: rgba(255, 198, 91, 0.56);
+      background:
+        linear-gradient(rgba(70, 45, 29, 0.92), rgba(70, 45, 29, 0.92)),
+        repeating-linear-gradient(90deg, #8f5a34 0 18px, #684023 18px 36px);
+      color: #fff2cf;
+      box-shadow: inset 0 0 22px rgba(255, 198, 91, 0.14), 0 0 24px rgba(255, 181, 74, 0.22);
+    }
+
+    body.is-night .tyrone-label {
+      color: #ffd98a;
+    }
+
     .scene.event-flash {
       animation: sceneFlash 760ms ease-out;
     }
@@ -1028,6 +1128,23 @@
         transform: translateX(3px) rotate(0.2deg);
       }
     }
+
+    @keyframes tyroneSignDrop {
+      0% {
+        opacity: 0;
+        transform: translateY(-18px) rotate(-2deg) scale(0.94);
+      }
+
+      62% {
+        opacity: 1;
+        transform: translateY(3px) rotate(0.8deg) scale(1.02);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0) rotate(-0.2deg) scale(1);
+      }
+    }
   </style>
 </head>
 <body>
@@ -1082,6 +1199,14 @@
           <span class="event-message" id="eventMessage">Harvest corn for a chance at Donnie's peculiar antique-field surprises.</span>
         </span>
       </section>
+
+      <aside class="tyrone-warning" id="tyroneWarning" aria-live="polite" aria-label="Tyrone warning" hidden>
+        <span class="tyrone-portrait" aria-hidden="true">🧑🏾‍🌾</span>
+        <span class="tyrone-copy">
+          <strong class="tyrone-label">Tyrone's Fencepost Wisdom</strong>
+          <span class="tyrone-message" id="tyroneMessage">Tyrone shakes his head slowly.</span>
+        </span>
+      </aside>
 
       <section class="actions" aria-label="Farm actions">
         <article class="panel">
@@ -1144,6 +1269,8 @@
     const BASE_INVENTORY_CAPACITY = 6;
     const BIGGER_BARN_CAPACITY = 12;
     const RANDOM_EVENT_CHANCE = 0.42;
+    const TYRONE_WARNING_CHANCE = 0.62;
+    const LANTERN_RESTORATION_FAILURE_CHANCE = 0.22;
     const SKY_CYCLE_SECONDS = 60;
     const RAIN_GROWTH_BONUS_SECONDS = 2;
     const STORM_ANTIQUE_CHANCE_BONUS = 0.08;
@@ -1191,6 +1318,40 @@
       { name: 'Old Radio', icon: '📻', minValue: 18, maxValue: 42 },
     ];
 
+    // Tyrone only chimes in for mishaps, keeping his warnings rare enough to stay funny.
+    const tyroneMessages = {
+      default: [
+        'Tyrone says: I told you that would happen, but you never listen.',
+        'Tyrone shakes his head slowly.',
+        'Tyrone mutters that the scarecrow saw this coming yesterday.',
+      ],
+      crop: [
+        'Tyrone says: That corn looked suspicious before breakfast.',
+        'Tyrone points at the field like it owes him an apology.',
+        'Tyrone warned you not to trust corn with dramatic tassels.',
+      ],
+      money: [
+        'Tyrone says: Money leaves faster when goats start doing paperwork.',
+        'Tyrone taps the cashbox and asks if it has a leak.',
+        'Tyrone says: That dollar had running shoes on it.',
+      ],
+      storm: [
+        'Tyrone says: When the clouds wear boots, bring the good buckets.',
+        'Tyrone squints at the thunder like it borrowed his wrench.',
+        'Tyrone says: Storms make antiques rattle and farmers reconsider choices.',
+      ],
+      inventory: [
+        'Tyrone says: That crate is fuller than Donnie at a pie auction.',
+        'Tyrone warned you about buying that rusty junk.',
+        'Tyrone says: Even the barn needs elbow room.',
+      ],
+      restoration: [
+        'Tyrone warned you about buying that rusty junk.',
+        'Tyrone says: Polish cannot fix everything, especially bad decisions.',
+        'Tyrone shakes his head slowly at the antique dust cloud.',
+      ],
+    };
+
     // Random events are resolved after harvests so they feel like field discoveries.
     const randomFarmEvents = [
       {
@@ -1209,12 +1370,27 @@
         icon: '🐐',
         tone: 'mischief',
         effect: 'shake',
+        tyroneType: 'money',
         run() {
           const loss = Math.min(game.money, getRandomValue(3, 8));
           game.money -= loss;
           return loss > 0
             ? `A goat certified your corn as chewable and billed the farm $${loss}.`
             : 'A goat tried to bill the farm, but Donnie paid with stern eye contact.';
+        },
+      },
+      {
+        title: 'Cornbread Blight',
+        icon: '🌽',
+        tone: 'mischief',
+        effect: 'shake',
+        tyroneType: 'crop',
+        run() {
+          const loss = Math.min(game.money, getRandomValue(2, 6));
+          game.money -= loss;
+          return loss > 0
+            ? `A fussy crop failure turned market corn into cornbread crumbs. Repairs cost $${loss}.`
+            : 'A fussy crop failure arrived, found no cash to bother, and left muddy footprints.';
         },
       },
       {
@@ -1231,6 +1407,7 @@
 
           if (game.inventory.length >= getInventoryCapacity()) {
             game.money += 15;
+            maybeShowTyroneWarning('inventory');
             return 'A rare butter churn peeked out, but the crate was full. Donnie took a $15 finder fee instead.';
           }
 
@@ -1282,6 +1459,7 @@
           };
 
           if (game.inventory.length >= getInventoryCapacity()) {
+            maybeShowTyroneWarning('inventory');
             return 'A fancy scarecrow tipped its hat, noticed the full crate, and politely vanished.';
           }
 
@@ -1334,6 +1512,8 @@
     const eventIcon = document.getElementById('eventIcon');
     const eventTitle = document.getElementById('eventTitle');
     const eventMessage = document.getElementById('eventMessage');
+    const tyroneWarning = document.getElementById('tyroneWarning');
+    const tyroneMessage = document.getElementById('tyroneMessage');
 
     let saveMessageTimer = null;
 
@@ -1480,6 +1660,28 @@
       }[character]));
     }
 
+    function showTyroneWarning(type = 'default') {
+      const messages = tyroneMessages[type] || tyroneMessages.default;
+      tyroneMessage.textContent = messages[Math.floor(Math.random() * messages.length)];
+      tyroneWarning.hidden = false;
+      tyroneWarning.classList.remove('is-visible');
+
+      // Restart the farm-sign drop animation whenever Tyrone has fresh wisdom.
+      void tyroneWarning.offsetWidth;
+      tyroneWarning.classList.add('is-visible');
+    }
+
+    function maybeShowTyroneWarning(type = 'default') {
+      if (Math.random() < TYRONE_WARNING_CHANCE) {
+        showTyroneWarning(type);
+      }
+    }
+
+    function hideTyroneWarning() {
+      tyroneWarning.classList.remove('is-visible');
+      tyroneWarning.hidden = true;
+    }
+
     function showEventSparks(symbol = '✨') {
       eventBanner.querySelectorAll('.event-spark').forEach((spark) => spark.remove());
 
@@ -1607,6 +1809,11 @@
       game.isDay = !game.isDay;
       rollWeather();
       updateSky();
+
+      if (game.weather === 'storm') {
+        maybeShowTyroneWarning('storm');
+      }
+
       renderCorn();
       saveGame(false);
     }
@@ -1743,6 +1950,7 @@
     function findAntique() {
       if (game.inventory.length >= getInventoryCapacity()) {
         inventoryMessage.textContent = 'Your barn crate is full. Sell antiques or buy the Bigger Barn upgrade.';
+        maybeShowTyroneWarning('inventory');
         return;
       }
 
@@ -1768,6 +1976,11 @@
       const event = randomFarmEvents[Math.floor(Math.random() * randomFarmEvents.length)];
       const message = event.run();
       showFarmEvent(event, message);
+
+      if (event.tyroneType) {
+        maybeShowTyroneWarning(event.tyroneType);
+      }
+
       updateMoney();
     }
 
@@ -1825,6 +2038,17 @@
       }
 
       game.money -= 3;
+
+      // Antique restoration is usually profitable, but old lanterns can still object dramatically.
+      if (Math.random() < LANTERN_RESTORATION_FAILURE_CHANCE) {
+        lanternStatus.textContent = 'The lantern restoration fizzled, smoked, and ate the $3 supply budget.';
+        lanternScene.innerHTML = '🏮💨';
+        maybeShowTyroneWarning('restoration');
+        updateMoney();
+        saveGame();
+        return;
+      }
+
       game.money += 10;
       game.lanternRestored = true;
       updateLantern();
@@ -1904,6 +2128,7 @@
       game.weather = 'sunny';
 
       eventBanner.classList.remove('is-visible', 'is-bonus', 'is-mischief', 'is-antique');
+      hideTyroneWarning();
       eventIcon.textContent = '🎲';
       eventTitle.textContent = 'Quiet morning on the farm';
       eventMessage.textContent = "Harvest corn for a chance at Donnie's peculiar antique-field surprises.";
