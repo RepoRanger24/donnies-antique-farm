@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Donnie's Antique Farm</title>
+  <style>
+    :root {
+      --cream: #fff4d8;
+      --warm-paper: #f9dfad;
+      --barn-red: #8f3d2f;
+      --soil: #745035;
+      --corn: #e8b84d;
+      --leaf: #5d8f42;
+      --wood: #9b6a3c;
+      --ink: #342719;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(255, 244, 216, 0.9), transparent 34%),
+        linear-gradient(160deg, #b67645 0%, #e4b76d 42%, #6f8c4a 100%);
+    }
+
+    .game {
+      width: min(900px, 100%);
+      padding: 28px;
+      border: 8px solid var(--wood);
+      border-radius: 24px;
+      background: linear-gradient(180deg, var(--cream), var(--warm-paper));
+      box-shadow: 0 24px 60px rgba(52, 39, 25, 0.35), inset 0 0 0 3px rgba(255, 255, 255, 0.35);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: var(--barn-red);
+      font-size: clamp(2rem, 6vw, 4rem);
+      letter-spacing: 1px;
+      text-shadow: 2px 2px 0 #f2c879;
+    }
+
+    .tagline {
+      margin: 0;
+      font-size: 1.05rem;
+      font-style: italic;
+    }
+
+    .money-board {
+      width: fit-content;
+      margin: 0 auto 26px;
+      padding: 12px 22px;
+      border: 4px solid var(--soil);
+      border-radius: 14px;
+      color: #fff7df;
+      font-size: 1.5rem;
+      font-weight: bold;
+      background: linear-gradient(135deg, #6b482f, #9b6a3c);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.15);
+    }
+
+    .sections {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      min-height: 300px;
+      padding: 20px;
+      border: 4px solid rgba(116, 80, 53, 0.65);
+      border-radius: 18px;
+      background: rgba(255, 251, 235, 0.82);
+      box-shadow: 0 12px 24px rgba(52, 39, 25, 0.14);
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: var(--barn-red);
+      font-size: 1.65rem;
+    }
+
+    .plot {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: 130px;
+      margin: 16px 0;
+      overflow: hidden;
+      border: 5px solid #5f3b24;
+      border-radius: 16px;
+      background:
+        repeating-linear-gradient(12deg, var(--soil) 0 18px, #8a6142 18px 35px);
+    }
+
+    .plot::after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border: 2px dashed rgba(255, 244, 216, 0.35);
+      border-radius: 12px;
+    }
+
+    .corn-plant {
+      z-index: 1;
+      display: none;
+      width: 34px;
+      height: 86px;
+      border-radius: 50% 50% 10px 10px;
+      background: linear-gradient(90deg, var(--leaf), #77a953, var(--leaf));
+      box-shadow: -22px 26px 0 -7px #6fa24e, 22px 20px 0 -7px #6fa24e;
+    }
+
+    .corn-plant.ready {
+      display: block;
+    }
+
+    .corn-plant.ready::before {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 42px;
+      margin-left: 5px;
+      margin-top: 26px;
+      border-radius: 12px;
+      background: repeating-linear-gradient(0deg, var(--corn) 0 7px, #f4cf6a 7px 10px);
+    }
+
+    .antique-shelf {
+      display: grid;
+      place-items: center;
+      min-height: 130px;
+      margin: 16px 0;
+      border: 5px solid #6d4327;
+      border-radius: 16px;
+      background:
+        linear-gradient(90deg, transparent 0 46%, rgba(109, 67, 39, 0.55) 46% 54%, transparent 54%),
+        linear-gradient(#a87346 0 22%, #7c4e2e 22% 30%, #b67d4d 30% 62%, #7c4e2e 62% 70%, #a87346 70%);
+    }
+
+    .lantern {
+      width: 72px;
+      height: 90px;
+      display: grid;
+      place-items: center;
+      color: #f9d86e;
+      font-size: 3rem;
+      filter: drop-shadow(0 6px 5px rgba(52, 39, 25, 0.3));
+    }
+
+    .status {
+      min-height: 28px;
+      margin: 12px 0 16px;
+      font-weight: bold;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px 18px;
+      border: 0;
+      border-radius: 999px;
+      color: #fff7df;
+      font: bold 1rem Georgia, "Times New Roman", serif;
+      cursor: pointer;
+      background: linear-gradient(180deg, #a64d39, var(--barn-red));
+      box-shadow: 0 6px 0 #5c271f;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 #5c271f;
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #5c271f;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .note {
+      margin: 12px 0 0;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <main class="game" aria-label="Donnie's Antique Farm game">
+    <header>
+      <h1>Donnie's Antique Farm</h1>
+      <p class="tagline">Grow fresh crops, restore dusty treasures, and build a cozy country shop.</p>
+    </header>
+
+    <div class="money-board" aria-live="polite">Money: $<span id="money">0</span></div>
+
+    <section class="sections">
+      <article class="card" aria-labelledby="garden-title">
+        <h2 id="garden-title">Garden Plot</h2>
+        <p>Plant one crop of corn and wait for it to grow.</p>
+
+        <div class="plot" aria-label="One garden plot">
+          <div id="cornPlant" class="corn-plant" aria-hidden="true"></div>
+        </div>
+
+        <p id="gardenStatus" class="status">The plot is empty and ready for planting.</p>
+        <button id="plantButton" type="button">Plant Corn</button>
+        <button id="harvestButton" type="button" hidden>Harvest Corn</button>
+        <p class="note">Corn takes 10 seconds to grow. Harvesting earns $5.</p>
+      </article>
+
+      <article class="card" aria-labelledby="antique-title">
+        <h2 id="antique-title">Antique Find</h2>
+        <p><strong>Old Lantern</strong> — a dusty barn find with a little shine left in it.</p>
+
+        <div class="antique-shelf" aria-label="Antique shop shelf holding an old lantern">
+          <div class="lantern" aria-hidden="true">⚱</div>
+        </div>
+
+        <p id="antiqueStatus" class="status">Restore the Old Lantern for $3 to sell it for $10.</p>
+        <button id="restoreButton" type="button">Restore Old Lantern</button>
+        <p class="note">Tip: harvest corn first if you need money for restoration.</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    // Game state kept small and clear for this single-file example.
+    const game = {
+      money: 0,
+      cornState: 'empty',
+      cornCountdown: 10,
+      lanternRestored: false
+    };
+
+    const moneyDisplay = document.getElementById('money');
+    const gardenStatus = document.getElementById('gardenStatus');
+    const antiqueStatus = document.getElementById('antiqueStatus');
+    const cornPlant = document.getElementById('cornPlant');
+    const plantButton = document.getElementById('plantButton');
+    const harvestButton = document.getElementById('harvestButton');
+    const restoreButton = document.getElementById('restoreButton');
+
+    function updateMoney(amount) {
+      game.money += amount;
+      moneyDisplay.textContent = game.money;
+    }
+
+    function setCornReady() {
+      game.cornState = 'ready';
+      cornPlant.classList.add('ready');
+      gardenStatus.textContent = 'The corn is ready to harvest!';
+      plantButton.hidden = true;
+      harvestButton.hidden = false;
+    }
+
+    function startCornCountdown() {
+      game.cornState = 'growing';
+      game.cornCountdown = 10;
+      plantButton.disabled = true;
+      gardenStatus.textContent = `Corn is growing: ${game.cornCountdown} seconds left.`;
+
+      const timer = setInterval(() => {
+        game.cornCountdown -= 1;
+        gardenStatus.textContent = `Corn is growing: ${game.cornCountdown} seconds left.`;
+
+        if (game.cornCountdown <= 0) {
+          clearInterval(timer);
+          setCornReady();
+        }
+      }, 1000);
+    }
+
+    plantButton.addEventListener('click', () => {
+      if (game.cornState === 'empty') {
+        startCornCountdown();
+      }
+    });
+
+    harvestButton.addEventListener('click', () => {
+      if (game.cornState !== 'ready') {
+        return;
+      }
+
+      updateMoney(5);
+      game.cornState = 'empty';
+      cornPlant.classList.remove('ready');
+      gardenStatus.textContent = 'Corn harvested for $5! The plot is ready again.';
+      harvestButton.hidden = true;
+      plantButton.hidden = false;
+      plantButton.disabled = false;
+    });
+
+    restoreButton.addEventListener('click', () => {
+      if (game.lanternRestored) {
+        antiqueStatus.textContent = 'The Old Lantern has already been restored and sold.';
+        return;
+      }
+
+      if (game.money < 3) {
+        antiqueStatus.textContent = 'You need $3 to restore the Old Lantern.';
+        return;
+      }
+
+      updateMoney(-3);
+      updateMoney(10);
+      game.lanternRestored = true;
+      restoreButton.disabled = true;
+      antiqueStatus.textContent = 'Restored and sold! You spent $3 and earned $10.';
+    });
+  </script>
+</body>
+</html>
