@@ -76,7 +76,7 @@
 
     .money-card {
       width: fit-content;
-      margin: 0 auto 1.5rem;
+      margin: 0 auto 1rem;
       padding: 0.9rem 1.5rem;
       border: 4px double var(--barn-red-dark);
       border-radius: 18px;
@@ -84,6 +84,33 @@
       box-shadow: inset 0 0 0 4px rgba(216, 154, 58, 0.18), 0 8px 20px rgba(0, 0, 0, 0.12);
       font-size: clamp(1.5rem, 4vw, 2.25rem);
       font-weight: 700;
+    }
+
+    .save-tools {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+      margin: 0 auto 1.5rem;
+    }
+
+    .save-message {
+      min-width: 8.25rem;
+      min-height: 1.4rem;
+      color: var(--field-green-dark);
+      font: 700 0.95rem Arial, sans-serif;
+      letter-spacing: 0.04em;
+      text-align: center;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .save-message.is-visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .actions {
@@ -332,6 +359,20 @@
       opacity: 0.7;
     }
 
+    .reset-save-button {
+      background: linear-gradient(180deg, #fff1c4, var(--aged-paper-dark));
+      box-shadow: 0 6px 0 #87612c, 0 10px 18px rgba(0, 0, 0, 0.15);
+    }
+
+    .reset-save-button:hover:not(:disabled),
+    .reset-save-button:focus-visible:not(:disabled) {
+      box-shadow: 0 8px 0 #87612c, 0 14px 22px rgba(0, 0, 0, 0.18);
+    }
+
+    .reset-save-button:active:not(:disabled) {
+      box-shadow: 0 3px 0 #87612c, 0 8px 14px rgba(0, 0, 0, 0.16);
+    }
+
     .farm-row {
       display: flex;
       align-items: center;
@@ -419,6 +460,11 @@
         Money: <span id="money">$0</span>
       </section>
 
+      <div class="save-tools" aria-label="Save game tools">
+        <button class="reset-save-button" id="resetSaveButton" type="button">Reset Save</button>
+        <p class="save-message" id="saveMessage" aria-live="polite"></p>
+      </div>
+
       <section class="actions" aria-label="Farm actions">
         <article class="panel">
           <div>
@@ -463,6 +509,10 @@
   </div>
 
   <script>
+    // Saved games live in browser localStorage under this versioned key.
+    const SAVE_KEY = 'donnies-antique-farm-save-v1';
+    const CORN_GROW_SECONDS = 10;
+
     // Antique items that can be discovered while harvesting corn.
     const antiqueItems = [
       { name: 'Rusty Key', icon: '🗝️', minValue: 6, maxValue: 14 },
@@ -479,10 +529,14 @@
       cornReady: false,
       cornTimer: null,
       cornSecondsLeft: 0,
+      cornEndTime: null,
+      lanternRestored: false,
       inventory: [],
     };
 
     const moneyDisplay = document.getElementById('money');
+    const saveMessage = document.getElementById('saveMessage');
+    const resetSaveButton = document.getElementById('resetSaveButton');
     const cornButton = document.getElementById('cornButton');
     const cornStatus = document.getElementById('cornStatus');
     const cornScene = document.getElementById('cornScene');
@@ -496,8 +550,102 @@
     const inventoryMessage = document.getElementById('inventoryMessage');
     const sellInventoryButton = document.getElementById('sellInventoryButton');
 
+    let saveMessageTimer = null;
+
     function getInventoryValue() {
       return game.inventory.reduce((total, item) => total + item.value, 0);
+    }
+
+    function showSaveMessage(message) {
+      window.clearTimeout(saveMessageTimer);
+      saveMessage.textContent = message;
+      saveMessage.classList.add('is-visible');
+
+      saveMessageTimer = window.setTimeout(() => {
+        saveMessage.classList.remove('is-visible');
+      }, 1800);
+    }
+
+    function saveGame(showMessage = true) {
+      const saveData = {
+        money: game.money,
+        inventory: game.inventory,
+        inventoryValue: getInventoryValue(),
+        lanternRestored: game.lanternRestored,
+        corn: {
+          growing: game.cornGrowing,
+          ready: game.cornReady,
+          secondsLeft: game.cornSecondsLeft,
+          endTime: game.cornEndTime,
+        },
+        savedAt: Date.now(),
+      };
+
+      localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+
+      if (showMessage) {
+        showSaveMessage('Game Saved');
+      }
+    }
+
+    function loadGame() {
+      const savedGame = localStorage.getItem(SAVE_KEY);
+
+      if (!savedGame) {
+        return false;
+      }
+
+      try {
+        const saveData = JSON.parse(savedGame);
+        const savedInventory = Array.isArray(saveData.inventory) ? saveData.inventory : [];
+        const savedCorn = saveData.corn || {};
+
+        game.money = Number.isFinite(saveData.money) ? Math.max(0, Math.floor(saveData.money)) : 0;
+        game.inventory = savedInventory
+          .filter((item) => item && typeof item.name === 'string' && typeof item.icon === 'string' && Number.isFinite(item.value))
+          .map((item) => ({
+            name: item.name,
+            icon: item.icon,
+            value: Math.max(0, Math.floor(item.value)),
+          }));
+        game.lanternRestored = Boolean(saveData.lanternRestored);
+        game.cornReady = Boolean(savedCorn.ready);
+        game.cornGrowing = Boolean(savedCorn.growing);
+        game.cornSecondsLeft = Number.isFinite(savedCorn.secondsLeft) ? Math.max(0, Math.ceil(savedCorn.secondsLeft)) : 0;
+        game.cornEndTime = Number.isFinite(savedCorn.endTime) ? savedCorn.endTime : null;
+
+        if (game.cornGrowing && game.cornEndTime) {
+          game.cornSecondsLeft = Math.max(0, Math.ceil((game.cornEndTime - Date.now()) / 1000));
+
+          if (game.cornSecondsLeft === 0) {
+            game.cornGrowing = false;
+            game.cornReady = true;
+            game.cornEndTime = null;
+          }
+        }
+
+        if (game.cornReady) {
+          game.cornGrowing = false;
+          game.cornSecondsLeft = 0;
+          game.cornEndTime = null;
+        }
+
+        return true;
+      } catch (error) {
+        console.warn('Could not load Donnie\'s Antique Farm save:', error);
+        localStorage.removeItem(SAVE_KEY);
+        return false;
+      }
+    }
+
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }[character]));
     }
 
     function updateInventory() {
@@ -512,13 +660,19 @@
         return;
       }
 
-      inventoryList.innerHTML = game.inventory.map((item) => `
-        <li class="inventory-item" title="${item.name}, worth $${item.value}">
-          <span class="inventory-icon" aria-hidden="true">${item.icon}</span>
-          <strong>${item.name}</strong>
-          <span class="inventory-value">$${item.value}</span>
-        </li>
-      `).join('');
+      inventoryList.innerHTML = game.inventory.map((item) => {
+        const itemName = escapeHTML(item.name);
+        const itemIcon = escapeHTML(item.icon);
+        const itemValue = escapeHTML(item.value);
+
+        return `
+          <li class="inventory-item" title="${itemName}, worth $${itemValue}">
+            <span class="inventory-icon" aria-hidden="true">${itemIcon}</span>
+            <strong>${itemName}</strong>
+            <span class="inventory-value">$${itemValue}</span>
+          </li>
+        `;
+      }).join('');
     }
 
     function getRandomValue(min, max) {
@@ -535,7 +689,7 @@
 
     function updateMoney() {
       moneyDisplay.textContent = `$${game.money}`;
-      lanternButton.disabled = game.money < 3;
+      lanternButton.disabled = game.lanternRestored || game.money < 3;
     }
 
     function setCornScene(state, contents) {
@@ -559,17 +713,88 @@
       cornCountdown.classList.add('is-visible');
     }
 
-    function finishCornGrowth() {
+    function updateLantern() {
+      if (game.lanternRestored) {
+        lanternScene.innerHTML = '<span class="lantern-lit">🏮✨</span>';
+        lanternStatus.textContent = 'Lantern restored! It is shining warmly in the barn.';
+        lanternButton.textContent = 'Lantern Restored';
+        return;
+      }
+
+      lanternScene.innerHTML = '🏮';
+      lanternStatus.textContent = 'Restore a dusty lantern for $3 and sell it for $10.';
+      lanternButton.textContent = 'Restore Lantern';
+    }
+
+    function finishCornGrowth(shouldSave = true) {
       window.clearInterval(game.cornTimer);
       game.cornTimer = null;
       game.cornGrowing = false;
       game.cornReady = true;
       game.cornSecondsLeft = 0;
+      game.cornEndTime = null;
       cornButton.disabled = false;
       cornButton.textContent = 'Harvest Corn';
       setCornScene('is-ripe', '<span class="corn-stalk">🌽 🌽 🌽</span>');
       cornStatus.textContent = 'The corn is ripe! Harvest it for $5.';
       updateCornCountdown();
+
+      if (shouldSave) {
+        saveGame();
+      }
+    }
+
+    function startCornTimer() {
+      window.clearInterval(game.cornTimer);
+
+      game.cornTimer = window.setInterval(() => {
+        if (game.cornEndTime) {
+          game.cornSecondsLeft = Math.max(0, Math.ceil((game.cornEndTime - Date.now()) / 1000));
+        } else {
+          game.cornSecondsLeft -= 1;
+        }
+
+        updateCornCountdown();
+        saveGame(false);
+
+        if (game.cornSecondsLeft <= 0) {
+          finishCornGrowth();
+        }
+      }, 1000);
+    }
+
+    function renderCorn() {
+      if (game.cornReady) {
+        cornButton.disabled = false;
+        cornButton.textContent = 'Harvest Corn';
+        setCornScene('is-ripe', '<span class="corn-stalk">🌽 🌽 🌽</span>');
+        cornStatus.textContent = 'The corn is ripe! Harvest it for $5.';
+        updateCornCountdown();
+        return;
+      }
+
+      if (game.cornGrowing) {
+        cornButton.disabled = true;
+        cornButton.textContent = 'Corn Growing...';
+        setCornScene('is-growing', '<span class="corn-stalk">🌱 🌽 🌱</span>');
+        cornStatus.textContent = 'Corn is growing. Watch the timer, then harvest the ripe ears.';
+        updateCornCountdown();
+        startCornTimer();
+        return;
+      }
+
+      cornButton.disabled = false;
+      cornButton.textContent = 'Plant Corn';
+      setCornScene('', '🧺');
+      cornStatus.textContent = 'The field is ready for seed. Corn takes 10 seconds to grow.';
+      updateCornCountdown();
+    }
+
+    function renderGame() {
+      updateInventory();
+      updateMoney();
+      updateLantern();
+      renderCorn();
     }
 
     function findAntique() {
@@ -593,21 +818,11 @@
       }
 
       game.cornGrowing = true;
-      game.cornSecondsLeft = 10;
-      cornButton.disabled = true;
-      cornButton.textContent = 'Corn Growing...';
-      setCornScene('is-growing', '<span class="corn-stalk">🌱 🌽 🌱</span>');
-      cornStatus.textContent = 'Corn is growing. Watch the timer, then harvest the ripe ears.';
-      updateCornCountdown();
-
-      game.cornTimer = window.setInterval(() => {
-        game.cornSecondsLeft -= 1;
-        updateCornCountdown();
-
-        if (game.cornSecondsLeft <= 0) {
-          finishCornGrowth();
-        }
-      }, 1000);
+      game.cornReady = false;
+      game.cornSecondsLeft = CORN_GROW_SECONDS;
+      game.cornEndTime = Date.now() + (CORN_GROW_SECONDS * 1000);
+      renderCorn();
+      saveGame();
     }
 
     function harvestCorn() {
@@ -618,12 +833,14 @@
       game.money += 5;
       game.cornReady = false;
       game.cornSecondsLeft = 0;
+      game.cornEndTime = null;
       cornButton.textContent = 'Plant Corn';
       setCornScene('', '🧺');
       updateCornCountdown();
       cornStatus.textContent = 'Fresh corn sold for $5. The field is ready for another planting.';
       findAntique();
       updateMoney();
+      saveGame();
     }
 
     function handleCornClick() {
@@ -635,6 +852,11 @@
     }
 
     function restoreLantern() {
+      if (game.lanternRestored) {
+        lanternStatus.textContent = 'The antique lantern is already restored and glowing.';
+        return;
+      }
+
       if (game.money < 3) {
         lanternStatus.textContent = 'You need $3 before you can restore the lantern.';
         return;
@@ -642,9 +864,11 @@
 
       game.money -= 3;
       game.money += 10;
-      lanternScene.innerHTML = '<span class="lantern-lit">🏮✨</span>';
+      game.lanternRestored = true;
+      updateLantern();
       lanternStatus.textContent = 'Lantern restored! You spent $3 and earned $10.';
       updateMoney();
+      saveGame();
     }
 
     function sellInventory() {
@@ -660,13 +884,40 @@
       inventoryMessage.textContent = `Sold your antique finds for $${saleTotal}!`;
       updateInventory();
       updateMoney();
+      saveGame();
+    }
+
+    function resetSave() {
+      window.clearInterval(game.cornTimer);
+      localStorage.removeItem(SAVE_KEY);
+
+      game.money = 0;
+      game.cornGrowing = false;
+      game.cornReady = false;
+      game.cornTimer = null;
+      game.cornSecondsLeft = 0;
+      game.cornEndTime = null;
+      game.lanternRestored = false;
+      game.inventory = [];
+
+      inventoryMessage.textContent = 'No antiques found yet. Keep harvesting corn!';
+      window.clearTimeout(saveMessageTimer);
+      saveMessage.textContent = '';
+      saveMessage.classList.remove('is-visible');
+      renderGame();
     }
 
     cornButton.addEventListener('click', handleCornClick);
     lanternButton.addEventListener('click', restoreLantern);
     sellInventoryButton.addEventListener('click', sellInventory);
-    updateInventory();
-    updateMoney();
+    resetSaveButton.addEventListener('click', resetSave);
+
+    if (loadGame()) {
+      renderGame();
+      showSaveMessage('Progress Loaded');
+    } else {
+      renderGame();
+    }
   </script>
 </body>
 </html>
