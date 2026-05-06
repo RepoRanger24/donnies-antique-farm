@@ -178,6 +178,19 @@
       border-radius: 16px;
       background: rgba(246, 231, 200, 0.7);
       font-size: 3rem;
+      transition: background 300ms ease, border-color 300ms ease, transform 300ms ease;
+    }
+
+    .scene.is-growing {
+      background: rgba(196, 218, 140, 0.72);
+      border-color: rgba(63, 81, 40, 0.7);
+      transform: translateY(-2px);
+    }
+
+    .scene.is-ripe {
+      background: rgba(255, 225, 117, 0.62);
+      border-color: rgba(216, 154, 58, 0.85);
+      transform: scale(1.02);
     }
 
     .status {
@@ -185,6 +198,22 @@
       margin: 0;
       font-size: 1.05rem;
       line-height: 1.4;
+    }
+
+    .countdown {
+      min-height: 1.5rem;
+      margin: -0.35rem 0 0;
+      color: var(--field-green-dark);
+      font: 700 1rem Arial, sans-serif;
+      letter-spacing: 0.04em;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .countdown.is-visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     button {
@@ -230,6 +259,11 @@
     .corn-stalk {
       display: inline-block;
       animation: grow 500ms ease-out;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .scene.is-growing .corn-stalk {
+      animation: grow 500ms ease-out, sway 1.2s ease-in-out 500ms infinite alternate;
     }
 
     .lantern-lit {
@@ -253,6 +287,16 @@
       to {
         transform: scale(1) translateY(0);
         opacity: 1;
+      }
+    }
+
+    @keyframes sway {
+      from {
+        transform: rotate(-2deg) translateY(1px);
+      }
+
+      to {
+        transform: rotate(2deg) translateY(-2px);
       }
     }
 
@@ -284,6 +328,7 @@
           <div>
             <h2>Corn Patch</h2>
             <p class="status" id="cornStatus">The field is ready for seed. Corn takes 10 seconds to grow.</p>
+            <p class="countdown" id="cornCountdown" aria-live="polite"></p>
           </div>
           <div class="scene" id="cornScene" aria-hidden="true">🧺</div>
           <button id="cornButton" type="button">Plant Corn</button>
@@ -332,6 +377,7 @@
       cornGrowing: false,
       cornReady: false,
       cornTimer: null,
+      cornSecondsLeft: 0,
       inventory: [],
     };
 
@@ -339,6 +385,7 @@
     const cornButton = document.getElementById('cornButton');
     const cornStatus = document.getElementById('cornStatus');
     const cornScene = document.getElementById('cornScene');
+    const cornCountdown = document.getElementById('cornCountdown');
     const lanternButton = document.getElementById('lanternButton');
     const lanternStatus = document.getElementById('lanternStatus');
     const lanternScene = document.getElementById('lanternScene');
@@ -374,6 +421,40 @@
       lanternButton.disabled = game.money < 3;
     }
 
+    function setCornScene(state, contents) {
+      cornScene.classList.remove('is-growing', 'is-ripe');
+
+      if (state) {
+        cornScene.classList.add(state);
+      }
+
+      cornScene.innerHTML = contents;
+    }
+
+    function updateCornCountdown() {
+      if (!game.cornGrowing) {
+        cornCountdown.textContent = '';
+        cornCountdown.classList.remove('is-visible');
+        return;
+      }
+
+      cornCountdown.textContent = `${game.cornSecondsLeft} second${game.cornSecondsLeft === 1 ? '' : 's'} until harvest`;
+      cornCountdown.classList.add('is-visible');
+    }
+
+    function finishCornGrowth() {
+      window.clearInterval(game.cornTimer);
+      game.cornTimer = null;
+      game.cornGrowing = false;
+      game.cornReady = true;
+      game.cornSecondsLeft = 0;
+      cornButton.disabled = false;
+      cornButton.textContent = 'Harvest Corn';
+      setCornScene('is-ripe', '<span class="corn-stalk">🌽 🌽 🌽</span>');
+      cornStatus.textContent = 'The corn is ripe! Harvest it for $5.';
+      updateCornCountdown();
+    }
+
     function findAntique() {
       // Roughly one in three harvests uncovers one antique from the soil.
       if (Math.random() >= 0.35) {
@@ -394,19 +475,21 @@
       }
 
       game.cornGrowing = true;
+      game.cornSecondsLeft = 10;
       cornButton.disabled = true;
-      cornButton.textContent = 'Growing...';
-      cornScene.innerHTML = '<span class="corn-stalk">🌱</span>';
-      cornStatus.textContent = 'Corn is growing. Come back in 10 seconds.';
+      cornButton.textContent = 'Corn Growing...';
+      setCornScene('is-growing', '<span class="corn-stalk">🌱 🌽 🌱</span>');
+      cornStatus.textContent = 'Corn is growing. Watch the timer, then harvest the ripe ears.';
+      updateCornCountdown();
 
-      game.cornTimer = window.setTimeout(() => {
-        game.cornGrowing = false;
-        game.cornReady = true;
-        cornButton.disabled = false;
-        cornButton.textContent = 'Harvest Corn';
-        cornScene.innerHTML = '<span class="corn-stalk">🌽 🌽 🌽</span>';
-        cornStatus.textContent = 'The corn is ripe! Harvest it for $5.';
-      }, 10000);
+      game.cornTimer = window.setInterval(() => {
+        game.cornSecondsLeft -= 1;
+        updateCornCountdown();
+
+        if (game.cornSecondsLeft <= 0) {
+          finishCornGrowth();
+        }
+      }, 1000);
     }
 
     function harvestCorn() {
@@ -416,8 +499,10 @@
 
       game.money += 5;
       game.cornReady = false;
+      game.cornSecondsLeft = 0;
       cornButton.textContent = 'Plant Corn';
-      cornScene.textContent = '🧺';
+      setCornScene('', '🧺');
+      updateCornCountdown();
       cornStatus.textContent = 'Fresh corn sold for $5. The field is ready for another planting.';
       findAntique();
       updateMoney();
