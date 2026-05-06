@@ -210,6 +210,122 @@
       transform: translateY(0);
     }
 
+    .event-banner {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 0.85rem;
+      min-height: 5.5rem;
+      margin: 0 auto 1.5rem;
+      padding: 1rem 1.2rem;
+      border: 5px double rgba(84, 32, 22, 0.62);
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(216, 154, 58, 0.3), transparent 8rem),
+        linear-gradient(135deg, #fff7dc 0%, var(--aged-paper) 48%, #e2bf78 100%);
+      box-shadow: inset 0 0 0 4px rgba(255, 246, 219, 0.45), 0 14px 28px rgba(65, 39, 18, 0.18);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .event-banner::before,
+    .event-banner::after {
+      content: "";
+      position: absolute;
+      width: 3.75rem;
+      height: 3.75rem;
+      border: 2px solid rgba(84, 32, 22, 0.14);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .event-banner::before {
+      left: -1rem;
+      top: -1.4rem;
+      background: rgba(125, 47, 35, 0.08);
+    }
+
+    .event-banner::after {
+      right: -1rem;
+      bottom: -1.4rem;
+      background: rgba(99, 122, 63, 0.1);
+    }
+
+    .event-banner.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      animation: bannerPop 520ms ease-out;
+    }
+
+    .event-banner.is-bonus {
+      border-color: rgba(63, 81, 40, 0.78);
+      box-shadow: inset 0 0 0 4px rgba(223, 231, 166, 0.55), 0 14px 28px rgba(65, 39, 18, 0.18);
+    }
+
+    .event-banner.is-mischief {
+      border-color: rgba(125, 47, 35, 0.72);
+    }
+
+    .event-banner.is-antique {
+      border-color: rgba(216, 154, 58, 0.9);
+      box-shadow: inset 0 0 0 4px rgba(255, 246, 219, 0.5), 0 0 22px rgba(216, 154, 58, 0.35), 0 14px 28px rgba(65, 39, 18, 0.18);
+    }
+
+    .event-icon {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 3.4rem;
+      height: 3.4rem;
+      border: 3px solid rgba(84, 32, 22, 0.32);
+      border-radius: 50%;
+      background: #fff6db;
+      font-size: 2rem;
+      box-shadow: inset 0 0 12px rgba(216, 154, 58, 0.22);
+    }
+
+    .event-banner.is-visible .event-icon {
+      animation: eventWiggle 900ms ease-in-out;
+    }
+
+    .event-copy {
+      position: relative;
+      z-index: 1;
+    }
+
+    .event-title {
+      display: block;
+      color: var(--barn-red-dark);
+      font-size: clamp(1.15rem, 3vw, 1.45rem);
+      line-height: 1.15;
+    }
+
+    .event-message {
+      display: block;
+      margin-top: 0.25rem;
+      line-height: 1.35;
+    }
+
+    .event-spark {
+      position: absolute;
+      z-index: 2;
+      font-size: 1.25rem;
+      pointer-events: none;
+      animation: sparkleFloat 1050ms ease-out forwards;
+    }
+
+    .scene.event-flash {
+      animation: sceneFlash 760ms ease-out;
+    }
+
+    .game.event-shake {
+      animation: gentleShake 420ms ease-in-out;
+    }
+
     .actions {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -656,6 +772,81 @@
         transform: translateY(0) rotate(0) scale(1);
       }
     }
+
+    @keyframes bannerPop {
+      0% {
+        transform: translateY(-10px) scale(0.94) rotate(-1deg);
+      }
+
+      65% {
+        transform: translateY(2px) scale(1.02) rotate(0.6deg);
+      }
+
+      100% {
+        transform: translateY(0) scale(1) rotate(0);
+      }
+    }
+
+    @keyframes eventWiggle {
+      0%, 100% {
+        transform: rotate(0) scale(1);
+      }
+
+      30% {
+        transform: rotate(-8deg) scale(1.08);
+      }
+
+      60% {
+        transform: rotate(7deg) scale(1.04);
+      }
+    }
+
+    @keyframes sparkleFloat {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.6) rotate(0);
+      }
+
+      22% {
+        opacity: 1;
+      }
+
+      to {
+        opacity: 0;
+        transform: translateY(-42px) scale(1.25) rotate(18deg);
+      }
+    }
+
+    @keyframes sceneFlash {
+      0% {
+        box-shadow: 0 0 0 rgba(216, 154, 58, 0);
+        transform: scale(1);
+      }
+
+      45% {
+        box-shadow: 0 0 28px rgba(216, 154, 58, 0.75);
+        transform: scale(1.04) rotate(-1deg);
+      }
+
+      100% {
+        box-shadow: 0 0 0 rgba(216, 154, 58, 0);
+        transform: scale(1);
+      }
+    }
+
+    @keyframes gentleShake {
+      0%, 100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-3px) rotate(-0.2deg);
+      }
+
+      75% {
+        transform: translateX(3px) rotate(0.2deg);
+      }
+    }
   </style>
 </head>
 <body>
@@ -680,6 +871,7 @@
             <li><span class="directions-emoji" aria-hidden="true">🌽</span>Plant corn to grow crops</li>
             <li><span class="directions-emoji" aria-hidden="true">⏳</span>Wait for corn to finish growing</li>
             <li><span class="directions-emoji" aria-hidden="true">🧺</span>Harvest corn to earn money</li>
+            <li><span class="directions-emoji" aria-hidden="true">🎲</span>Occasional farm events bring bonuses, mishaps, and charming surprises</li>
             <li><span class="directions-emoji" aria-hidden="true">🗝️</span>Sometimes harvesting uncovers hidden antiques</li>
             <li><span class="directions-emoji" aria-hidden="true">📦</span>Antiques go into your inventory crate</li>
             <li><span class="directions-emoji" aria-hidden="true">💰</span>Sell inventory to earn more money</li>
@@ -693,6 +885,14 @@
         <button class="reset-save-button" id="resetSaveButton" type="button">Reset Save</button>
         <p class="save-message" id="saveMessage" aria-live="polite"></p>
       </div>
+
+      <section class="event-banner" id="eventBanner" aria-live="polite" aria-label="Random farm event">
+        <span class="event-icon" id="eventIcon" aria-hidden="true">🎲</span>
+        <span class="event-copy">
+          <strong class="event-title" id="eventTitle">Quiet morning on the farm</strong>
+          <span class="event-message" id="eventMessage">Harvest corn for a chance at Donnie's peculiar antique-field surprises.</span>
+        </span>
+      </section>
 
       <section class="actions" aria-label="Farm actions">
         <article class="panel">
@@ -754,6 +954,7 @@
     const DETECTOR_ANTIQUE_CHANCE = 0.55;
     const BASE_INVENTORY_CAPACITY = 6;
     const BIGGER_BARN_CAPACITY = 12;
+    const RANDOM_EVENT_CHANCE = 0.42;
 
     // Farm upgrades are permanent once purchased and saved.
     const farmUpgrades = [
@@ -792,6 +993,107 @@
       { name: 'Old Radio', icon: '📻', minValue: 18, maxValue: 42 },
     ];
 
+    // Random events are resolved after harvests so they feel like field discoveries.
+    const randomFarmEvents = [
+      {
+        title: 'Button Jar Jackpot',
+        icon: '🫙',
+        tone: 'bonus',
+        effect: 'sparkle',
+        run() {
+          const bonus = getRandomValue(6, 14);
+          game.money += bonus;
+          return `Donnie found emergency cash in a jar labeled “definitely not beans.” +$${bonus}!`;
+        },
+      },
+      {
+        title: 'Goat Appraisal Fee',
+        icon: '🐐',
+        tone: 'mischief',
+        effect: 'shake',
+        run() {
+          const loss = Math.min(game.money, getRandomValue(3, 8));
+          game.money -= loss;
+          return loss > 0
+            ? `A goat certified your corn as chewable and billed the farm $${loss}.`
+            : 'A goat tried to bill the farm, but Donnie paid with stern eye contact.';
+        },
+      },
+      {
+        title: 'Rare Attic Relic',
+        icon: '🏺',
+        tone: 'antique',
+        effect: 'sparkle',
+        run() {
+          const rareItem = {
+            name: 'Blue-Ribbon Butter Churn',
+            icon: '🏺',
+            value: getRandomValue(35, 65),
+          };
+
+          if (game.inventory.length >= getInventoryCapacity()) {
+            game.money += 15;
+            return 'A rare butter churn peeked out, but the crate was full. Donnie took a $15 finder fee instead.';
+          }
+
+          game.inventory.push(rareItem);
+          updateInventory();
+          return `Unearthed ${rareItem.icon} ${rareItem.name}, worth $${rareItem.value}! The antiques practically applauded.`;
+        },
+      },
+      {
+        title: 'Almanac Breeze',
+        icon: '📖',
+        tone: 'bonus',
+        effect: 'flash',
+        run() {
+          game.nextCropBoostSeconds = Math.max(game.nextCropBoostSeconds, 3);
+          return 'Grandpa’s almanac flapped open to “hurry up.” Your next corn crop grows 3 seconds faster.';
+        },
+      },
+      {
+        title: 'Barn Dance Encore',
+        icon: '🪕',
+        tone: 'bonus',
+        effect: 'sparkle',
+        run() {
+          return 'A mouse band played two jigs on a thimble stage. No profit, but morale smells faintly of biscuits.';
+        },
+      },
+      {
+        title: 'Tin Rooster Refund',
+        icon: '🐓',
+        tone: 'bonus',
+        effect: 'flash',
+        run() {
+          const bonus = getRandomValue(4, 10);
+          game.money += bonus;
+          return `The tin rooster crowed at noon and startled loose change from the fence. +$${bonus}!`;
+        },
+      },
+      {
+        title: 'Suspiciously Fancy Scarecrow',
+        icon: '🎩',
+        tone: 'antique',
+        effect: 'sparkle',
+        run() {
+          const fancyHat = {
+            name: 'Velvet Scarecrow Hat',
+            icon: '🎩',
+            value: getRandomValue(20, 38),
+          };
+
+          if (game.inventory.length >= getInventoryCapacity()) {
+            return 'A fancy scarecrow tipped its hat, noticed the full crate, and politely vanished.';
+          }
+
+          game.inventory.push(fancyHat);
+          updateInventory();
+          return `The scarecrow donated ${fancyHat.icon} ${fancyHat.name}, worth $${fancyHat.value}. Very fashionable dirt.`;
+        },
+      },
+    ];
+
     // Donnie's Antique Farm keeps all game state in this small object.
     const game = {
       money: 0,
@@ -803,6 +1105,7 @@
       lanternRestored: false,
       inventory: [],
       upgrades: {},
+      nextCropBoostSeconds: 0,
     };
 
     const moneyDisplay = document.getElementById('money');
@@ -824,6 +1127,10 @@
     const sellInventoryButton = document.getElementById('sellInventoryButton');
     const upgradeShelf = document.getElementById('upgradeShelf');
     const upgradeMessage = document.getElementById('upgradeMessage');
+    const eventBanner = document.getElementById('eventBanner');
+    const eventIcon = document.getElementById('eventIcon');
+    const eventTitle = document.getElementById('eventTitle');
+    const eventMessage = document.getElementById('eventMessage');
 
     let saveMessageTimer = null;
 
@@ -844,7 +1151,8 @@
     }
 
     function getCornGrowSeconds() {
-      return hasUpgrade('betterTractor') ? CORN_GROW_SECONDS - 2 : CORN_GROW_SECONDS;
+      const upgradeBoost = hasUpgrade('betterTractor') ? 2 : 0;
+      return Math.max(3, CORN_GROW_SECONDS - upgradeBoost - game.nextCropBoostSeconds);
     }
 
     function getAntiqueChance() {
@@ -871,6 +1179,7 @@
         inventory: game.inventory,
         inventoryValue: getInventoryValue(),
         upgrades: game.upgrades,
+        nextCropBoostSeconds: game.nextCropBoostSeconds,
         lanternRestored: game.lanternRestored,
         corn: {
           growing: game.cornGrowing,
@@ -914,6 +1223,7 @@
           return upgrades;
         }, {});
         game.lanternRestored = Boolean(saveData.lanternRestored);
+        game.nextCropBoostSeconds = Number.isFinite(saveData.nextCropBoostSeconds) ? Math.max(0, Math.floor(saveData.nextCropBoostSeconds)) : 0;
         game.cornReady = Boolean(savedCorn.ready);
         game.cornGrowing = Boolean(savedCorn.growing);
         game.cornSecondsLeft = Number.isFinite(savedCorn.secondsLeft) ? Math.max(0, Math.ceil(savedCorn.secondsLeft)) : 0;
@@ -951,6 +1261,51 @@
         '"': '&quot;',
         "'": '&#39;',
       }[character]));
+    }
+
+    function showEventSparks(symbol = '✨') {
+      eventBanner.querySelectorAll('.event-spark').forEach((spark) => spark.remove());
+
+      for (let index = 0; index < 7; index += 1) {
+        const spark = document.createElement('span');
+        spark.className = 'event-spark';
+        spark.textContent = symbol;
+        spark.style.left = `${getRandomValue(8, 92)}%`;
+        spark.style.top = `${getRandomValue(22, 82)}%`;
+        spark.style.animationDelay = `${index * 55}ms`;
+        eventBanner.append(spark);
+      }
+    }
+
+    function playEventEffect(event) {
+      const gameBoard = document.querySelector('.game');
+      eventBanner.classList.remove('is-visible', 'is-bonus', 'is-mischief', 'is-antique');
+      cornScene.classList.remove('event-flash');
+      gameBoard.classList.remove('event-shake');
+      eventBanner.querySelectorAll('.event-spark').forEach((spark) => spark.remove());
+
+      // Restart CSS animations each time a new farm event arrives.
+      void eventBanner.offsetWidth;
+      eventBanner.classList.add('is-visible', `is-${event.tone}`);
+
+      if (event.effect === 'sparkle') {
+        showEventSparks('✨');
+      }
+
+      if (event.effect === 'flash') {
+        cornScene.classList.add('event-flash');
+      }
+
+      if (event.effect === 'shake') {
+        gameBoard.classList.add('event-shake');
+      }
+    }
+
+    function showFarmEvent(event, message) {
+      eventIcon.textContent = event.icon;
+      eventTitle.textContent = event.title;
+      eventMessage.textContent = message;
+      playEventEffect(event);
     }
 
     function updateInventory() {
@@ -1148,6 +1503,17 @@
       updateInventory();
     }
 
+    function triggerRandomFarmEvent() {
+      if (Math.random() >= RANDOM_EVENT_CHANCE) {
+        return;
+      }
+
+      const event = randomFarmEvents[Math.floor(Math.random() * randomFarmEvents.length)];
+      const message = event.run();
+      showFarmEvent(event, message);
+      updateMoney();
+    }
+
     function plantCorn() {
       if (game.cornGrowing || game.cornReady) {
         return;
@@ -1155,7 +1521,9 @@
 
       game.cornGrowing = true;
       game.cornReady = false;
-      game.cornSecondsLeft = getCornGrowSeconds();
+      const growthSeconds = getCornGrowSeconds();
+      game.nextCropBoostSeconds = 0;
+      game.cornSecondsLeft = growthSeconds;
       game.cornEndTime = Date.now() + (game.cornSecondsLeft * 1000);
       renderCorn();
       saveGame();
@@ -1175,6 +1543,7 @@
       updateCornCountdown();
       cornStatus.textContent = 'Fresh corn sold for $5. The field is ready for another planting.';
       findAntique();
+      triggerRandomFarmEvent();
       updateMoney();
       saveGame();
     }
@@ -1273,7 +1642,12 @@
       game.lanternRestored = false;
       game.inventory = [];
       game.upgrades = {};
+      game.nextCropBoostSeconds = 0;
 
+      eventBanner.classList.remove('is-visible', 'is-bonus', 'is-mischief', 'is-antique');
+      eventIcon.textContent = '🎲';
+      eventTitle.textContent = 'Quiet morning on the farm';
+      eventMessage.textContent = "Harvest corn for a chance at Donnie's peculiar antique-field surprises.";
       upgradeMessage.textContent = 'Save up corn and antique money for permanent farm improvements.';
       inventoryMessage.textContent = 'No antiques found yet. Keep harvesting corn!';
       window.clearTimeout(saveMessageTimer);
