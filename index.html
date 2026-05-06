@@ -92,6 +92,63 @@
       gap: 1.25rem;
     }
 
+    .inventory-panel {
+      margin-top: 1.25rem;
+      min-height: auto;
+    }
+
+    .inventory-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .inventory-total {
+      margin: 0.2rem 0 0;
+      font-weight: 700;
+      color: var(--barn-red-dark);
+    }
+
+    .inventory-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .inventory-item,
+    .inventory-empty {
+      border: 3px double rgba(84, 32, 22, 0.45);
+      border-radius: 16px;
+      background: rgba(255, 246, 219, 0.78);
+      padding: 0.8rem;
+    }
+
+    .inventory-item strong {
+      display: block;
+      color: var(--barn-red-dark);
+      font-size: 1.05rem;
+    }
+
+    .inventory-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      font-style: italic;
+    }
+
+    .inventory-message {
+      min-height: 1.6rem;
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.4;
+      color: var(--barn-red-dark);
+      font-weight: 700;
+    }
+
     .panel {
       min-height: 260px;
       padding: 1.25rem;
@@ -241,20 +298,41 @@
           <button id="lanternButton" type="button">Restore Lantern</button>
         </article>
       </section>
+
+      <section class="panel inventory-panel" aria-labelledby="inventoryHeading">
+        <div class="inventory-header">
+          <div>
+            <h2 id="inventoryHeading">Antique Inventory</h2>
+            <p class="status">Harvesting corn may uncover forgotten treasures in the field.</p>
+            <p class="inventory-total" id="inventoryTotal">Inventory value: $0</p>
+          </div>
+          <button id="sellInventoryButton" type="button">Sell Inventory</button>
+        </div>
+        <ul class="inventory-list" id="inventoryList" aria-live="polite"></ul>
+        <p class="inventory-message" id="inventoryMessage" aria-live="polite">No antiques found yet. Keep harvesting corn!</p>
+      </section>
     </main>
 
     <footer>
-      Tip: harvest ripe corn for $5, then use your earnings to restore more antiques.
+      Tip: harvest ripe corn for $5, then check your inventory for antiques to sell.
     </footer>
   </div>
 
   <script>
+    // Antique items that can be discovered while harvesting corn.
+    const antiqueItems = [
+      { name: 'Rusty Key', icon: '🗝️', value: 7 },
+      { name: 'Pocket Watch', icon: '⌚', value: 18 },
+      { name: 'Antique Bottle', icon: '🍾', value: 12 },
+    ];
+
     // Donnie's Antique Farm keeps all game state in this small object.
     const game = {
       money: 0,
       cornGrowing: false,
       cornReady: false,
       cornTimer: null,
+      inventory: [],
     };
 
     const moneyDisplay = document.getElementById('money');
@@ -264,10 +342,50 @@
     const lanternButton = document.getElementById('lanternButton');
     const lanternStatus = document.getElementById('lanternStatus');
     const lanternScene = document.getElementById('lanternScene');
+    const inventoryList = document.getElementById('inventoryList');
+    const inventoryTotal = document.getElementById('inventoryTotal');
+    const inventoryMessage = document.getElementById('inventoryMessage');
+    const sellInventoryButton = document.getElementById('sellInventoryButton');
+
+    function getInventoryValue() {
+      return game.inventory.reduce((total, item) => total + item.value, 0);
+    }
+
+    function updateInventory() {
+      const inventoryValue = getInventoryValue();
+      inventoryTotal.textContent = `Inventory value: $${inventoryValue}`;
+      sellInventoryButton.disabled = game.inventory.length === 0;
+
+      if (game.inventory.length === 0) {
+        inventoryList.innerHTML = '<li class="inventory-empty">The old crate is empty.</li>';
+        return;
+      }
+
+      inventoryList.innerHTML = game.inventory.map((item) => `
+        <li class="inventory-item">
+          <strong>${item.icon} ${item.name}</strong>
+          Value: $${item.value}
+        </li>
+      `).join('');
+    }
 
     function updateMoney() {
       moneyDisplay.textContent = `$${game.money}`;
       lanternButton.disabled = game.money < 3;
+    }
+
+    function findAntique() {
+      // Roughly one in three harvests uncovers one antique from the soil.
+      if (Math.random() >= 0.35) {
+        inventoryMessage.textContent = 'No antique this harvest, just good corn and honest dirt.';
+        return;
+      }
+
+      const foundItem = antiqueItems[Math.floor(Math.random() * antiqueItems.length)];
+      game.inventory.push(foundItem);
+      cornStatus.textContent = `Fresh corn sold for $5. You also found a ${foundItem.name}!`;
+      inventoryMessage.textContent = `Found ${foundItem.icon} ${foundItem.name} worth $${foundItem.value}!`;
+      updateInventory();
     }
 
     function plantCorn() {
@@ -301,6 +419,7 @@
       cornButton.textContent = 'Plant Corn';
       cornScene.textContent = '🧺';
       cornStatus.textContent = 'Fresh corn sold for $5. The field is ready for another planting.';
+      findAntique();
       updateMoney();
     }
 
@@ -325,8 +444,25 @@
       updateMoney();
     }
 
+    function sellInventory() {
+      const saleTotal = getInventoryValue();
+
+      if (saleTotal === 0) {
+        inventoryMessage.textContent = 'Find an antique before setting up the roadside sale table.';
+        return;
+      }
+
+      game.money += saleTotal;
+      game.inventory = [];
+      inventoryMessage.textContent = `Sold your antique finds for $${saleTotal}!`;
+      updateInventory();
+      updateMoney();
+    }
+
     cornButton.addEventListener('click', handleCornClick);
     lanternButton.addEventListener('click', restoreLantern);
+    sellInventoryButton.addEventListener('click', sellInventory);
+    updateInventory();
     updateMoney();
   </script>
 </body>
