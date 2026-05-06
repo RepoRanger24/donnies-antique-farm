@@ -95,6 +95,18 @@
     .inventory-panel {
       margin-top: 1.25rem;
       min-height: auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .inventory-panel::after {
+      content: "";
+      position: absolute;
+      inset: auto 1.25rem 1rem;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(84, 32, 22, 0.16);
+      pointer-events: none;
     }
 
     .inventory-header {
@@ -111,12 +123,51 @@
       color: var(--barn-red-dark);
     }
 
+    .inventory-count {
+      margin: 0.2rem 0 0;
+      font-weight: 700;
+      color: var(--field-green-dark);
+    }
+
+    .inventory-crate {
+      position: relative;
+      min-height: 150px;
+      padding: 1rem;
+      border: 6px solid #6a4529;
+      border-radius: 20px;
+      background:
+        linear-gradient(rgba(92, 56, 29, 0.12), rgba(92, 56, 29, 0.12)),
+        repeating-linear-gradient(90deg, #9a673d 0 22px, #80512e 22px 44px);
+      box-shadow: inset 0 0 0 4px rgba(255, 246, 219, 0.25), inset 0 -18px 0 rgba(65, 39, 18, 0.16);
+    }
+
+    .inventory-crate::before,
+    .inventory-crate::after {
+      content: "";
+      position: absolute;
+      left: 0.7rem;
+      right: 0.7rem;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(84, 32, 22, 0.45);
+    }
+
+    .inventory-crate::before {
+      top: 0.7rem;
+    }
+
+    .inventory-crate::after {
+      bottom: 0.7rem;
+    }
+
     .inventory-list {
+      position: relative;
+      z-index: 1;
       list-style: none;
       margin: 0;
-      padding: 0;
+      padding: 0.6rem 0;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 0.75rem;
     }
 
@@ -124,18 +175,51 @@
     .inventory-empty {
       border: 3px double rgba(84, 32, 22, 0.45);
       border-radius: 16px;
-      background: rgba(255, 246, 219, 0.78);
+      background: rgba(255, 246, 219, 0.86);
       padding: 0.8rem;
+    }
+
+    .inventory-item {
+      display: grid;
+      justify-items: center;
+      gap: 0.25rem;
+      min-height: 110px;
+      text-align: center;
+      box-shadow: 0 8px 16px rgba(65, 39, 18, 0.18);
+      transform-origin: center bottom;
+      transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+    }
+
+    .inventory-item:hover,
+    .inventory-item:focus-within {
+      filter: brightness(1.05);
+      transform: translateY(-6px) rotate(-2deg) scale(1.04);
+      box-shadow: 0 14px 22px rgba(65, 39, 18, 0.24);
+    }
+
+    .inventory-icon {
+      display: block;
+      font-size: 2.4rem;
+      line-height: 1;
+      animation: settleIn 260ms ease-out;
     }
 
     .inventory-item strong {
       display: block;
       color: var(--barn-red-dark);
-      font-size: 1.05rem;
+      font-size: 1.02rem;
+    }
+
+    .inventory-value {
+      font: 700 0.95rem Arial, sans-serif;
+      color: var(--field-green-dark);
     }
 
     .inventory-empty {
       grid-column: 1 / -1;
+      display: grid;
+      place-items: center;
+      min-height: 94px;
       text-align: center;
       font-style: italic;
     }
@@ -309,6 +393,18 @@
         text-shadow: 0 0 20px rgba(216, 154, 58, 1), 0 0 36px rgba(255, 238, 168, 0.8);
       }
     }
+
+    @keyframes settleIn {
+      from {
+        opacity: 0;
+        transform: translateY(-16px) rotate(8deg) scale(0.78);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) rotate(0) scale(1);
+      }
+    }
   </style>
 </head>
 <body>
@@ -350,10 +446,13 @@
             <h2 id="inventoryHeading">Antique Inventory</h2>
             <p class="status">Harvesting corn may uncover forgotten treasures in the field.</p>
             <p class="inventory-total" id="inventoryTotal">Inventory value: $0</p>
+            <p class="inventory-count" id="inventoryCount">Inventory count: 0 items</p>
           </div>
           <button id="sellInventoryButton" type="button">Sell Inventory</button>
         </div>
-        <ul class="inventory-list" id="inventoryList" aria-live="polite"></ul>
+        <div class="inventory-crate" aria-label="Wooden inventory crate">
+          <ul class="inventory-list" id="inventoryList" aria-live="polite"></ul>
+        </div>
         <p class="inventory-message" id="inventoryMessage" aria-live="polite">No antiques found yet. Keep harvesting corn!</p>
       </section>
     </main>
@@ -366,9 +465,11 @@
   <script>
     // Antique items that can be discovered while harvesting corn.
     const antiqueItems = [
-      { name: 'Rusty Key', icon: '🗝️', value: 7 },
-      { name: 'Pocket Watch', icon: '⌚', value: 18 },
-      { name: 'Antique Bottle', icon: '🍾', value: 12 },
+      { name: 'Rusty Key', icon: '🗝️', minValue: 6, maxValue: 14 },
+      { name: 'Pocket Watch', icon: '⏱️', minValue: 15, maxValue: 35 },
+      { name: 'Milk Can', icon: '🥛', minValue: 10, maxValue: 24 },
+      { name: 'Horseshoe', icon: '🧲', minValue: 8, maxValue: 20 },
+      { name: 'Old Radio', icon: '📻', minValue: 18, maxValue: 42 },
     ];
 
     // Donnie's Antique Farm keeps all game state in this small object.
@@ -391,6 +492,7 @@
     const lanternScene = document.getElementById('lanternScene');
     const inventoryList = document.getElementById('inventoryList');
     const inventoryTotal = document.getElementById('inventoryTotal');
+    const inventoryCount = document.getElementById('inventoryCount');
     const inventoryMessage = document.getElementById('inventoryMessage');
     const sellInventoryButton = document.getElementById('sellInventoryButton');
 
@@ -400,7 +502,9 @@
 
     function updateInventory() {
       const inventoryValue = getInventoryValue();
+      const itemLabel = game.inventory.length === 1 ? 'item' : 'items';
       inventoryTotal.textContent = `Inventory value: $${inventoryValue}`;
+      inventoryCount.textContent = `Inventory count: ${game.inventory.length} ${itemLabel}`;
       sellInventoryButton.disabled = game.inventory.length === 0;
 
       if (game.inventory.length === 0) {
@@ -409,11 +513,24 @@
       }
 
       inventoryList.innerHTML = game.inventory.map((item) => `
-        <li class="inventory-item">
-          <strong>${item.icon} ${item.name}</strong>
-          Value: $${item.value}
+        <li class="inventory-item" title="${item.name}, worth $${item.value}">
+          <span class="inventory-icon" aria-hidden="true">${item.icon}</span>
+          <strong>${item.name}</strong>
+          <span class="inventory-value">$${item.value}</span>
         </li>
       `).join('');
+    }
+
+    function getRandomValue(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function createAntiqueFind(item) {
+      return {
+        name: item.name,
+        icon: item.icon,
+        value: getRandomValue(item.minValue, item.maxValue),
+      };
     }
 
     function updateMoney() {
@@ -462,7 +579,8 @@
         return;
       }
 
-      const foundItem = antiqueItems[Math.floor(Math.random() * antiqueItems.length)];
+      const antiqueType = antiqueItems[Math.floor(Math.random() * antiqueItems.length)];
+      const foundItem = createAntiqueFind(antiqueType);
       game.inventory.push(foundItem);
       cornStatus.textContent = `Fresh corn sold for $5. You also found a ${foundItem.name}!`;
       inventoryMessage.textContent = `Found ${foundItem.icon} ${foundItem.name} worth $${foundItem.value}!`;
